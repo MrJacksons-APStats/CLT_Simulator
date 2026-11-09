@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shooting Guard Heights: Central Limit Theorem Simulator</title>
+<style>
+:root{
+  --navy:#00274C; --maize:#FFCB05;
+  --bg:#F3F5F8; --surface:#FFFFFF; --ink:#0E1A2B; --muted:#55627A; --line:#D3D9E3; --stripe:#F6F8FB;
+  --sym:#00274C; --pop:#3F5E8C; --sym-new:#FFCB05; --sym-new-ink:#00274C; --hit:#D9480F; --curve:#2B7A3D; --shade:rgba(217,72,15,.15);
+  --btn-bg:#00274C; --btn-ink:#FFFFFF; --btn2-bg:#E4E8EF; --btn2-ink:#00274C;
+  --focus:#2F6FDE;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#06111F; --surface:#0C1D33; --ink:#E9EEF6; --muted:#9AA8BF; --line:#22385A; --stripe:#102540;
+    --sym:#FFCB05; --pop:#8FB0E0; --sym-new:#FFFFFF; --sym-new-ink:#00274C; --hit:#FF8A4C; --curve:#6FD08C; --shade:rgba(255,138,76,.2);
+    --btn-bg:#FFCB05; --btn-ink:#00274C; --btn2-bg:#1A3050; --btn2-ink:#E9EEF6;
+    --focus:#8AB4FF; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#06111F; --surface:#0C1D33; --ink:#E9EEF6; --muted:#9AA8BF; --line:#22385A; --stripe:#102540;
+  --sym:#FFCB05; --pop:#8FB0E0; --sym-new:#FFFFFF; --sym-new-ink:#00274C; --hit:#FF8A4C; --curve:#6FD08C; --shade:rgba(255,138,76,.2);
+  --btn-bg:#FFCB05; --btn-ink:#00274C; --btn2-bg:#1A3050; --btn2-ink:#E9EEF6;
+  --focus:#8AB4FF; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--navy);color:#fff;border-bottom:6px solid var(--maize)}
+.wrap{max-width:1140px;margin:0 auto;padding:0 20px}
+header .wrap{padding-top:22px;padding-bottom:18px;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 20px;justify-content:space-between}
+h1{font:800 clamp(24px,4vw,38px)/1.1 system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;letter-spacing:-.01em}
+.pop{font-size:15px;color:#C9D4E5}
+.pop b{color:var(--maize);font-weight:700}
+main.wrap{padding-top:20px;padding-bottom:40px}
+.topbar{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-top:16px;padding:14px 18px}
+.phead{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+h2{font:800 22px/1.2 system-ui,sans-serif;margin:0}
+.tag{font:700 13px/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.05em;background:var(--navy);color:#fff;border-radius:4px;padding:5px 8px}
+.tag.alt{background:var(--maize);color:var(--navy)}
+.controls{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:flex-end;padding:10px 0 4px}
+.divider{width:1px;align-self:stretch;background:var(--line)}
+.field label{display:block;font:700 13px/1.2 system-ui,sans-serif;color:var(--muted);margin-bottom:5px;letter-spacing:.02em}
+.field input[type=number]{width:100px;font:700 22px/1 system-ui,sans-serif;padding:8px 10px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.fixed{display:flex;align-items:center;height:43px;font:800 22px/1 system-ui,sans-serif;padding:0 4px}
+input:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+button{font:700 17px/1 system-ui,sans-serif;border:0;border-radius:6px;padding:12px 16px;cursor:pointer}
+.primary{background:var(--btn-bg);color:var(--btn-ink)}
+.secondary{background:var(--btn2-bg);color:var(--btn2-ink)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.chk{display:flex;align-items:center;gap:7px;font-size:15px;color:var(--muted);cursor:pointer}
+.chk.ink{color:var(--ink)}
+.chk input{width:18px;height:18px;accent-color:var(--navy)}
+.msg{min-height:1.4em;margin:4px 0 0;font-size:15px;color:var(--muted)}
+.msg.err{color:var(--hit);font-weight:600}
+.m{font-family:"Times New Roman",Times,serif;font-style:italic;font-size:1.18em}
+sub{font-size:.7em}
+.recent{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;background:var(--stripe);border-radius:8px;padding:10px 12px;margin:6px 0 4px;min-height:58px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:flex;flex-direction:column;align-items:center;min-width:56px;padding:3px 7px 5px;border-radius:6px;background:var(--navy);color:#fff;line-height:1.1}
+:root[data-theme="dark"] .chip{background:var(--maize);color:var(--navy)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .chip{background:var(--maize);color:var(--navy)}}
+.chip small{font-size:11px;opacity:.85}
+.chip span{font:700 19px system-ui,sans-serif}
+.calc{font-size:17px}
+.empty{color:var(--muted);margin:0}
+svg.plot{display:block;width:100%;height:auto}
+.stats{display:flex;flex-wrap:wrap;gap:4px 24px;padding:4px 4px 0;font-size:16px;color:var(--muted)}
+.stats b{color:var(--ink);font-weight:700}
+.tools{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.counter{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:16px}
+.counter select,.counter input[type=number]{font:700 17px system-ui,sans-serif;padding:6px 8px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.counter input[type=number]{width:96px}
+.countres{font-size:17px;margin-top:6px;min-height:1.4em}
+.countres b{color:var(--hit)}
+.theory{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.theory dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:baseline}
+.theory dt{font-weight:700;color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+.theory dd{margin:0;font-size:17px}
+.ok{color:var(--curve);font-weight:700}
+.bad{color:var(--hit);font-weight:700}
+details.log{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+details.log summary{cursor:pointer;font-weight:700}
+.logwrap{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:6px;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:5px 10px;text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:var(--surface);border-bottom:2px solid var(--line);font-size:13px;color:var(--muted)}
+tbody tr:nth-child(even){background:var(--stripe)}
+td.v{font-weight:700}
+.note{font-size:14px;color:var(--muted);margin:6px 0 0}
+.hidden{display:none}
+@media (max-width:760px){ .divider{display:none} }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Shooting Guard Heights and the Central Limit Theorem</h1>
+    <div class="pop">Population: <b>123</b> NBA shooting guards</div>
+  </div>
+</header>
+<main class="wrap">
+  <section class="panel">
+    <div class="topbar">
+      <label class="chk ink"><input type="checkbox" id="animate" checked> Add samples one at a time</label>
+      <label class="chk ink"><input type="checkbox" id="theoryOn"> Show Normal curve and theory on the sampling distributions</label>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Population distribution">
+    <div class="phead"><h2>Population: all 123 shooting guards</h2><span class="tag">Question 1</span></div>
+    <svg class="plot" id="svgPop" viewBox="0 0 960 300" role="img" aria-label="Dotplot of the heights of all 123 shooting guards"></svg>
+    <div class="stats" id="statsPop"></div>
+  </section>
+
+  <div id="panels"></div>
+</main>
+
+<template id="panelTpl">
+  <section class="panel">
+    <div class="phead"><h2 class="ptitle"></h2><span class="tag ptag"></span></div>
+    <div class="controls">
+      <div class="field nfield"></div>
+      <div class="divider"></div>
+      <button class="primary one">Take 1 sample</button>
+      <div class="divider"></div>
+      <div class="field"><label>Number of samples</label><input class="k" type="number" min="1" max="10000" step="1" value="50" inputmode="numeric"></div>
+      <button class="primary go">Take samples</button>
+      <button class="secondary clear">Clear</button>
+    </div>
+    <div class="replwrap"></div>
+    <p class="msg" role="status"></p>
+    <div class="recent" aria-live="polite"></div>
+    <svg class="plot" viewBox="0 0 960 330" role="img"></svg>
+    <div class="stats"></div>
+    <div class="tools countwrap"></div>
+    <div class="theory hidden"></div>
+    <details class="log"><summary>Sample log</summary><div class="logbody"></div></details>
+  </section>
+</template>
+
+<script>
+(function(){
+  // Heights (inches) for players #1–#123 (index 0 = player #1)
+  const DATA=[76,74,75,75,76,77,78,76,77,76,76,76,79,73,75,79,76,77,78,79,77,76,73,75,76,77,77,76,77,75,76,77,77,77,77,75,78,77,77,76,76,77,78,77,78,76,74,79,75,73,77,77,77,77,78,72,75,77,75,78,71,76,73,75,77,74,76,75,77,76,76,69,74,73,75,78,76,76,75,77,77,77,75,77,76,76,77,78,79,77,78,78,75,77,78,75,75,76,76,77,78,76,78,77,77,76,78,75,76,77,75,76,78,78,78,77,78,78,79,78,78,79,76];
+  const N=DATA.length;
+  const MU=DATA.reduce((a,b)=>a+b,0)/N;
+  const SIGMA=Math.sqrt(DATA.reduce((a,b)=>a+(b-MU)**2,0)/(N-1)); // 1.673, matches the handout's summary table
+  const LO=69, HI=79;
+  const SVGNS="http://www.w3.org/2000/svg";
+  const $=id=>document.getElementById(id);
+  const reduceMotion=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(reduceMotion) $("animate").checked=false;
+  const MINUS="\u2212";
+  const fmt=(v,d)=>{ let s=v.toFixed(d); if(s.includes(".")) s=s.replace(/0+$/,"").replace(/\.$/,""); return s.replace("-",MINUS); };
+  const XB='<span class="m">x̄</span>';
+
+  function normCdf(z){ const t=1/(1+0.3275911*Math.abs(z)/Math.SQRT2); const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-z*z/2); return z>=0?(1+y)/2:(1-y)/2; }
+  function median(a){ const s=[...a].sort((x,y)=>x-y), m=s.length>>1; return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+  function summary(vals){ const k=vals.length; if(!k) return null; const mean=vals.reduce((a,b)=>a+b,0)/k; const sd=k>1?Math.sqrt(vals.reduce((a,b)=>a+(b-mean)**2,0)/(k-1)):null; return {k,mean,sd}; }
+
+  // ---------- dotplot ----------
+  const W=960,ML=36,MR=36,MT=14,LABEL_BAND=28,BOTTOM=78,PW=W-ML-MR;
+  function el(tag,attrs,parent){ const e=document.createElementNS(SVGNS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; }
+  function drawPlot(svg,o){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const css=getComputedStyle(document.documentElement), c=n=>css.getPropertyValue(n).trim();
+    const ink=c("--ink"),muted=c("--muted"),symC=o.popColor?c("--pop"):c("--sym"),newBg=c("--sym-new"),newInk=c("--sym-new-ink"),hit=c("--hit"),curveC=c("--curve"),shade=c("--shade");
+    const font="system-ui, -apple-system, 'Segoe UI', sans-serif";
+    const vals=o.vals, k=vals.length;
+    const sx=v=>ML+(v-LO)/(HI-LO)*PW;
+    const spacingPx=o.step/(HI-LO)*PW, MINCOL=8, BASE=22;
+    let colW,keyOf,xOf,colVal;
+    if(spacingPx>=MINCOL){ colW=Math.min(BASE,spacingPx); keyOf=v=>Math.round(v/o.step); xOf=q=>sx(q*o.step); colVal=o.step; }
+    else { // group a whole number of possible values into each column so columns stay even
+      const m=Math.ceil(MINCOL/spacingPx), bw=m*o.step;
+      colW=Math.min(BASE,bw/(HI-LO)*PW); keyOf=v=>Math.round(v/bw); xOf=q=>sx(q*bw); colVal=bw; }
+    const stacks=new Map();
+    vals.forEach((v,i)=>{ const q=keyOf(v); if(!stacks.has(q)) stacks.set(q,[]); stacks.get(q).push({isNew:o.highlightLast&&i===k-1,hit:o.pred?o.pred.test(v):false}); });
+    let maxStack=0; stacks.forEach(a=>{ if(a.length>maxStack) maxStack=a.length; });
+    const dens=v=>Math.exp(-0.5*((v-o.mu)/o.sd)**2)/(o.sd*Math.sqrt(2*Math.PI));
+    const showCurve=o.theory&&k>0;
+    const peak=showCurve?k*dens(o.mu)*colVal:0;
+    const tallest=Math.max(maxStack,peak*1.02);
+    const area=Math.max(o.minArea,Math.min(o.maxArea,tallest*colW*1.05+4));
+    const H=MT+LABEL_BAND+area+BOTTOM, AXIS_Y=H-BOTTOM;
+    svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+    const rowH=Math.min(colW*1.05,tallest?area/tallest:colW), size=Math.min(colW,rowH/1.05);
+
+    if(o.pred){
+      const xc=Math.min(Math.max(sx(o.pred.v),ML),W-MR), right=o.pred.dir==="ge"||o.pred.dir==="gt";
+      const x0=right?xc:ML, x1=right?W-MR:xc;
+      if(x1>x0) el("rect",{x:x0,y:MT,width:x1-x0,height:AXIS_Y-MT,fill:shade},svg);
+      el("line",{x1:xc,x2:xc,y1:MT,y2:AXIS_Y,stroke:hit,"stroke-width":2},svg);
+    }
+    el("line",{x1:ML,x2:W-MR,y1:AXIS_Y,y2:AXIS_Y,stroke:ink,"stroke-width":1.5},svg);
+    for(let t=LO;t<=HI+1e-9;t+=0.5){
+      const x=sx(t), major=Number.isInteger(t);
+      el("line",{x1:x,x2:x,y1:AXIS_Y,y2:AXIS_Y+(major?8:5),stroke:ink,"stroke-width":major?1.5:1},svg);
+      const tx=el("text",{x,y:AXIS_Y+27,"text-anchor":"middle","font-size":major?16:13,fill:major?ink:muted,"font-family":font},svg); tx.textContent=Number.isInteger(t)?t:t.toFixed(1);
+    }
+    const lab=el("text",{x:ML+PW/2,y:H-16,"text-anchor":"middle","font-size":19,"font-weight":700,fill:ink,"font-family":font},svg); lab.textContent=o.label;
+    if(!k){ const e=el("text",{x:ML+PW/2,y:MT+LABEL_BAND+area/2,"text-anchor":"middle","font-size":17,fill:muted,"font-family":font},svg); e.textContent="No samples yet"; }
+    const g=el("g",{},svg);
+    stacks.forEach((arr,q)=>{
+      const x=xOf(q);
+      arr.forEach((s,i)=>{
+        const yb=AXIS_Y-3-i*rowH;
+        if(s.isNew) el("rect",{x:x-size/2,y:yb-rowH+0.5,width:size,height:Math.max(rowH-1,1),rx:Math.min(3,size/5),fill:newBg},g);
+        const col=s.isNew?newInk:(s.hit?hit:symC);
+        if(o.symbol==="dot"||size<9){ el("circle",{cx:x,cy:yb-rowH/2,r:Math.max(Math.min(size,rowH)/2-1,1),fill:col},g); }
+        else {
+          const fs=size*0.95, base=yb-rowH*0.24, half=fs*0.24;
+          const t=el("text",{x,y:base,"text-anchor":"middle","font-size":fs,"font-style":"italic","font-weight":600,fill:col,"font-family":"'Times New Roman',Times,serif"},g); t.textContent="x";
+          const yb2=base-fs*0.66;
+          el("line",{x1:x-half+fs*.03,x2:x+half+fs*.03,y1:yb2,y2:yb2,stroke:col,"stroke-width":Math.max(1,size*.08),"stroke-linecap":"round"},g);
+        }
+      });
+    });
+    if(showCurve){
+      let d="";
+      for(let i=0;i<=400;i++){ const v=LO+(HI-LO)*i/400; const y=AXIS_Y-3-k*dens(v)*colVal*rowH; d+=(i?"L":"M")+sx(v).toFixed(1)+","+Math.max(MT,y).toFixed(1); }
+      el("path",{d,fill:"none",stroke:curveC,"stroke-width":3},svg);
+    }
+    if(o.muLine){
+      const mx=sx(MU);
+      el("line",{x1:mx,x2:mx,y1:MT,y2:AXIS_Y,stroke:curveC,"stroke-width":1.5,"stroke-dasharray":"6 5"},svg);
+      const t=el("text",{x:mx+8,y:MT+16,"font-size":16,"font-weight":700,fill:curveC,"font-family":font},svg); t.textContent=`μ = ${MU.toFixed(3)}`;
+    }
+  }
+
+  // ---------- population ----------
+  function drawPop(){
+    drawPlot($("svgPop"),{vals:DATA,step:1,mu:MU,sd:SIGMA,label:"Height of Shooting Guards (inches)",symbol:"dot",popColor:true,minArea:200,maxArea:300,theory:false,muLine:$("theoryOn").checked});
+    $("statsPop").innerHTML=`<span><span class="m">N</span> = <b>123</b></span><span>Mean (<span class="m">μ</span>): <b>${MU.toFixed(3)}</b> in</span><span>SD (<span class="m">σ</span>): <b>${SIGMA.toFixed(3)}</b> in</span><span>Median: <b>${median(DATA)}</b> in</span><span>Min: <b>${Math.min(...DATA)}</b></span><span>Max: <b>${Math.max(...DATA)}</b></span>`;
+  }
+
+  // ---------- sampling panels ----------
+  const panels=[];
+  function makePanel(cfg){
+    const node=$("panelTpl").content.firstElementChild.cloneNode(true);
+    $("panels").appendChild(node);
+    const q=s=>node.querySelector(s);
+    const P={cfg,node,samples:[],currentN:null,busy:false,timer:null,q};
+    q(".ptitle").innerHTML=cfg.title; q(".ptag").textContent=cfg.tag; if(cfg.alt) q(".ptag").classList.add("alt");
+    const uid=cfg.id;
+    q(".k").id=uid+"k"; q(".k").previousElementSibling.setAttribute("for",uid+"k"); q(".k").value=cfg.k;
+    if(cfg.fixedN){
+      q(".nfield").innerHTML=`<label>Sample size</label><div class="fixed"><span class="m">n</span>&nbsp;= ${cfg.fixedN}</div>`;
+    } else {
+      q(".nfield").innerHTML=`<label for="${uid}n">Sample size (<span class="m">n</span>)</label><input id="${uid}n" type="number" min="1" max="123" step="1" value="${cfg.n}" inputmode="numeric">`;
+      q(".replwrap").innerHTML=`<label class="chk ink"><input type="checkbox" id="${uid}repl"> Sample with replacement (the same player can be picked more than once)</label>`;
+      q(".countwrap").innerHTML=`<div><div class="counter"><label class="chk ink"><input type="checkbox" id="${uid}cOn"> <span>Count samples where ${XB}</span></label><select id="${uid}cDir" aria-label="Direction"><option value="gt">&gt;</option><option value="ge">≥</option><option value="lt">&lt;</option><option value="le">≤</option></select><input id="${uid}cVal" type="number" step="0.1" value="77" aria-label="Cutoff value"></div><div class="countres"></div></div>`;
+      ["cOn","cDir","cVal"].forEach(s=>{ const e=$(uid+s); e.addEventListener("input",()=>render(P)); e.addEventListener("change",()=>render(P)); });
+      $(uid+"n").addEventListener("change",()=>{ const v=Number($(uid+"n").value); if(P.samples.length&&Number.isInteger(v)&&v!==P.currentN){ P.samples=[]; P.currentN=null; setMsg(P,`Sample size changed to ${v}, so the dotplot was cleared.`); } render(P); });
+      $(uid+"n").addEventListener("keydown",e=>{ if(e.key==="Enter") q(".one").click(); });
+      $(uid+"repl").addEventListener("change",()=>{ if(P.samples.length){ P.samples=[]; P.currentN=null; setMsg(P,"Sampling method changed, so the dotplot was cleared."); } render(P); });
+    }
+    if(!cfg.countable) q(".countwrap").classList.add("hidden");
+    q(".one").addEventListener("click",()=>add(P,1));
+    q(".go").addEventListener("click",()=>{ const k=Number(q(".k").value); if(!Number.isInteger(k)||k<1||k>10000){ setMsg(P,"Number of samples must be a whole number from 1 to 10,000.",true); return; } add(P,k); });
+    q(".k").addEventListener("keydown",e=>{ if(e.key==="Enter") q(".go").click(); });
+    q(".clear").addEventListener("click",()=>{ if(P.timer){clearInterval(P.timer);P.timer=null;setBusy(P,false);} P.samples=[]; P.currentN=null; setMsg(P,"Cleared."); render(P); });
+    panels.push(P); render(P); return P;
+  }
+  function setMsg(P,t,err){ const m=P.q(".msg"); m.textContent=t||""; m.className="msg"+(err?" err":""); }
+  function setBusy(P,b){ P.busy=b; P.node.querySelectorAll("button.one,button.go,input").forEach(e=>{ if(!e.id.endsWith("cOn")&&!e.id.endsWith("cVal")) e.disabled=b; }); }
+  function getN(P){
+    if(P.cfg.fixedN) return P.cfg.fixedN;
+    const v=Number($(P.cfg.id+"n").value);
+    if(!Number.isInteger(v)||v<1||v>N){ setMsg(P,"Sample size must be a whole number from 1 to 123.",true); return null; }
+    return v;
+  }
+  const isRepl=P=>!P.cfg.fixedN&&$(P.cfg.id+"repl").checked;
+  function drawSample(n,repl){
+    let idx;
+    if(repl){ idx=Array.from({length:n},()=>Math.floor(Math.random()*N)); }
+    else { const pool=Array.from({length:N},(_,i)=>i); for(let i=0;i<n;i++){ const j=i+Math.floor(Math.random()*(N-i)); [pool[i],pool[j]]=[pool[j],pool[i]]; } idx=pool.slice(0,n); }
+    const sum=idx.reduce((a,i)=>a+DATA[i],0);
+    return {idx,sum,xbar:sum/n};
+  }
+  function add(P,k){
+    const n=getN(P); if(n===null) return;
+    if(P.currentN!==null&&P.currentN!==n&&P.samples.length){ P.samples=[]; setMsg(P,`Sample size changed to ${n}, so the dotplot was cleared.`); } else setMsg(P,"");
+    if(P.samples.length+k>20000){ setMsg(P,"The dotplot holds up to 20,000 samples. Press Clear to start again.",true); return; }
+    P.currentN=n; const repl=isRepl(P);
+    const animate=$("animate").checked&&k>1&&!reduceMotion;
+    if(!animate){ for(let i=0;i<k;i++) P.samples.push(drawSample(n,repl)); render(P); return; }
+    setBusy(P,true); let done=0; const delay=Math.max(15,Math.min(250,5000/k)); const per=k>400?Math.ceil(k/300):1;
+    P.timer=setInterval(()=>{
+      for(let j=0;j<per&&done<k;j++){ P.samples.push(drawSample(n,repl)); done++; }
+      render(P);
+      if(done>=k){ clearInterval(P.timer); P.timer=null; setBusy(P,false); }
+    },delay);
+  }
+
+  function getPred(P){
+    if(!P.cfg.countable||!$(P.cfg.id+"cOn").checked) return null;
+    const raw=$(P.cfg.id+"cVal").value, v=Number(raw); if(raw===""||!Number.isFinite(v)) return null;
+    const dir=$(P.cfg.id+"cDir").value;
+    const test={gt:x=>x>v+1e-9,ge:x=>x>=v-1e-9,lt:x=>x<v-1e-9,le:x=>x<=v+1e-9}[dir];
+    return {v,dir,test,sym:{gt:">",ge:"≥",lt:"<",le:"≤"}[dir]};
+  }
+
+  function render(P){
+    const n=P.currentN ?? (P.cfg.fixedN || (Number.isInteger(Number($(P.cfg.id+"n").value))&&Number($(P.cfg.id+"n").value)>0?Number($(P.cfg.id+"n").value):10));
+    const k=P.samples.length, last=P.samples[k-1], theory=$("theoryOn").checked, pred=getPred(P);
+    const sdx=SIGMA/Math.sqrt(n);
+    const vals=P.samples.map(s=>s.xbar);
+    drawPlot(P.q("svg"),{vals,step:1/n,mu:MU,sd:sdx,label:`Sample Mean Height (n = ${n})`,symbol:"xbar",highlightLast:true,pred,theory,muLine:theory,minArea:220,maxArea:480});
+    P.q("svg").setAttribute("aria-label",`Dotplot of ${k} sample means for samples of size ${n}`);
+    const s=summary(vals);
+    P.q(".stats").innerHTML=s?`<span>Samples: <b>${s.k}</b></span><span>Mean of ${XB} values: <b>${s.mean.toFixed(3)}</b> in</span><span>SD of ${XB} values: <b>${s.sd==null?"—":s.sd.toFixed(3)}</b> in</span>`:"";
+
+    // most recent
+    if(last){
+      const chips=last.idx.length<=40?last.idx.map(i=>`<div class="chip" title="Player #${i+1}: ${DATA[i]} inches"><small>#${i+1}</small><span>${DATA[i]}</span></div>`).join(""):"";
+      const sumStr=last.idx.length<=12?last.idx.map(i=>DATA[i]).join(" + "):String(last.sum);
+      P.q(".recent").innerHTML=`<div class="chips">${chips}</div><div class="calc">Sample #${k}: ${XB} = (${sumStr}) / ${last.idx.length} = <b>${fmt(last.xbar,3)}</b> in</div>`;
+    } else P.q(".recent").innerHTML=`<p class="empty">Press <b>Take 1 sample</b> to randomly pick ${P.cfg.fixedN?P.cfg.fixedN:"n"} shooting guards.</p>`;
+
+    // count
+    if(P.cfg.countable){
+      const cr=P.q(".countres");
+      if(pred&&k){ const hits=vals.filter(pred.test).length; cr.innerHTML=`<b>${hits}</b> of ${k} samples have ${XB} ${pred.sym} ${fmt(pred.v,3)}, a proportion of <b>${fmt(hits/k,4)}</b>.`; }
+      else cr.textContent=pred?"Take some samples to count them.":"";
+    }
+
+    // theory
+    const th=P.q(".theory"); th.classList.toggle("hidden",!theory);
+    if(theory){
+      const repl=isRepl(P), ten=n<=0.1*N;
+      let h=`<dl><dt>Center</dt><dd><span class="m">μ</span><sub>x̄</sub> = <span class="m">μ</span> = <b>${MU.toFixed(3)}</b> in</dd>`;
+      h+=`<dt>Variability</dt><dd><span class="m">σ</span><sub>x̄</sub> = <span class="m">σ</span>/√<span class="m">n</span> = ${SIGMA.toFixed(3)}/√${n} = <b>${sdx.toFixed(4)}</b> in</dd>`;
+      h+=`<dt>Shape</dt><dd>The population is skewed left. ${n>=30?`<span class="ok">n = ${n} ≥ 30, so by the CLT the sampling distribution of x̄ is approximately Normal.</span>`:`<span class="bad">n = ${n} &lt; 30, so the CLT does not apply. Expect some of the population’s left skew to remain.</span>`}</dd>`;
+      h+=`<dt>10% condition</dt><dd>${repl?'<span class="ok">Sampling with replacement, so the condition is not needed.</span>':`n = ${n} ${ten?"≤":">"} 10% of 123 = 12.3. ${ten?'<span class="ok">Met.</span>':'<span class="bad">Not met, so the simulated SD will be smaller than σ/√n.</span>'}`}</dd>`;
+      if(pred){
+        const z=(pred.v-MU)/sdx, right=pred.dir==="gt"||pred.dir==="ge", pr=right?1-normCdf(z):normCdf(z);
+        h+=`<dt>Normal probability</dt><dd><span class="m">z</span> = (${fmt(pred.v,3)} − ${MU.toFixed(3)}) / ${sdx.toFixed(4)} = <b>${z.toFixed(2).replace("-",MINUS)}</b><br>P(${XB} ${pred.sym} ${fmt(pred.v,3)}) ≈ P(<span class="m">z</span> ${pred.sym} ${z.toFixed(2).replace("-",MINUS)}) = <b>${pr.toFixed(4)}</b></dd>`;
+      }
+      th.innerHTML=h+"</dl>";
+    }
+
+    // log
+    const lb=P.q(".logbody");
+    if(k){
+      const start=Math.max(0,k-300); let rows="";
+      for(let i=start;i<k;i++){ const sm=P.samples[i]; const hts=sm.idx.length<=12?sm.idx.map(j=>DATA[j]).join(", "):`${sm.idx.length} players`; rows+=`<tr><td>${i+1}</td><td>${hts}</td><td class="v">${fmt(sm.xbar,3)}</td></tr>`; }
+      lb.innerHTML=`<div class="logwrap"><table><thead><tr><th>SAMPLE</th><th>HEIGHTS (IN)</th><th>${XB}</th></tr></thead><tbody>${rows}</tbody></table></div>`+(start>0?'<p class="note">Showing the most recent 300 samples.</p>':"");
+      const w=lb.querySelector(".logwrap"); w.scrollTop=w.scrollHeight;
+    } else lb.innerHTML='<p class="empty">Every sample is listed here in order.</p>';
+  }
+
+  makePanel({id:"a",title:`Samples of size <span class="m">n</span> = 2`,tag:"Question 2",fixedN:2,k:50});
+  makePanel({id:"b",title:`Samples of size <span class="m">n</span> (you choose)`,tag:"Questions 3 and 6",alt:true,n:10,k:50,countable:true});
+
+  function renderEverything(){ drawPop(); panels.forEach(render); }
+  $("theoryOn").addEventListener("change",renderEverything);
+  if(window.matchMedia){ const mq=window.matchMedia("(prefers-color-scheme: dark)"); (mq.addEventListener?mq.addEventListener("change",renderEverything):mq.addListener(renderEverything)); }
+  drawPop();
+})();
+</script>
+</body>
+</html>
